@@ -236,13 +236,13 @@ static int get_pathrecord_info(struct mca_btl_openib_sa_qp_cache *cache,
     got_sl_value = 0;
     get_sl_rec_retries = 0;
 
-    rc = ibv_post_recv(cache->qp, &(cache->rwr), &brwr);
+/*    rc = ibv_post_recv(cache->qp, &(cache->rwr), &brwr);
     if (0 != rc) {
         BTL_ERROR(("error posting receive on QP [0x%x] errno says: %s [%d]",
                    cache->qp->qp_num, strerror(errno), errno));
         return OMPI_ERROR;
     }
-
+*/
     while (0 == got_sl_value) {
         rc = ibv_post_send(cache->qp, swr, &bswr);
         if (0 != rc) {
@@ -313,6 +313,7 @@ static int init_device(struct ibv_context *context_arg,
 {
     struct ibv_ah_attr aattr;
     struct ibv_port_attr pattr;
+    struct ibv_recv_wr *brwr;
     int rc;
 
     cache->context = ibv_open_device(context_arg->device);
@@ -381,6 +382,13 @@ static int init_device(struct ibv_context *context_arg,
         (cache->send_recv_buffer + MAD_BLOCK_SIZE);
     cache->rsge.length = MAD_BLOCK_SIZE + 40;
     cache->rsge.lkey = cache->mr->lkey;
+
+    rc = ibv_post_recv(cache->qp, &(cache->rwr), &brwr);
+    if (0 != rc) {
+        BTL_ERROR(("error posting receive on QP [0x%x] errno says: %s [%d]",
+                   cache->qp->qp_num, strerror(errno), errno));
+        return OMPI_ERROR;
+    }
 
     return 0;
 }
