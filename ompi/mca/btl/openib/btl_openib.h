@@ -224,6 +224,7 @@ struct mca_btl_openib_component_t {
 #if (ENABLE_DYNAMIC_SL)
     unsigned int ib_path_record_service_level;
 #endif
+    unsigned int ib_path_selection_strategy;
     int     use_eager_rdma;
     int     eager_rdma_threshold; /**< After this number of msg, use RDMA for short messages, always */
     int     eager_rdma_num;

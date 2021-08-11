@@ -460,7 +460,12 @@ mca_pml_bfo_send_request_start( mca_pml_bfo_send_request_t* sendreq )
         int rc;
 
         /* select a btl */
-        bml_btl = mca_bml_base_btl_array_get_next(&endpoint->btl_eager);
+        if (0 == mca_btl_openib_component.ib_path_selection_strategy) {
+            bml_btl = mca_bml_base_btl_array_get_next(&endpoint->btl_eager);
+        } else {
+            size_t index = rand() % endpoint->btl_eager.arr_size;
+            bml_btl = mca_bml_base_btl_array_get_index(&endpoint->btl_eager, index);
+        }
         rc = mca_pml_bfo_send_request_start_btl(sendreq, bml_btl);
         if( OPAL_LIKELY(OMPI_ERR_OUT_OF_RESOURCE != rc) )
             return rc;
