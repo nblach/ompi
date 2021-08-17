@@ -24,6 +24,7 @@
 
 #include "ompi/mca/btl/btl.h"
 #include "ompi/mca/pml/base/pml_base_sendreq.h"
+#include "ompi/mca/btl/openib/btl_openib_endpoint.h"
 #include "ompi/mca/mpool/base/base.h"
 #include "pml_bfo_comm.h"
 #include "pml_bfo_hdr.h"

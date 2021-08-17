@@ -63,6 +63,7 @@ BEGIN_C_DECLS
 #define MCA_BTL_IB_PKEY_MASK 0x7fff
 #define MCA_BTL_OPENIB_CQ_POLL_BATCH_DEFAULT (256)
 
+#define MAX_LID 0x10000
 
 /*--------------------------------------------------------------------*/
 
@@ -154,6 +155,19 @@ typedef struct mca_btl_openib_srq_manager_t {
 } mca_btl_openib_srq_manager_t;
 #endif
 
+typedef struct mca_btl_openib_adaptive_dst_t {
+    /* Number of levels (a level corresponds to a set of paths that have the same length */
+    uint8_t levels;
+    /* Array mapping a level to range of indices in the offset array */
+    uint8_t *level_idx_range;
+    /* Array mapping a level to the corresponding path length */
+    uint8_t *level_hops;
+    /* Array containing the layer offsets sorted according to level */
+    uint8_t *level_idx_to_layer_offset;
+    /* Used for round_robin */
+    uint8_t *prev_index;
+} mca_btl_openib_adaptive_dst_t;
+
 struct mca_btl_openib_component_t {
     mca_btl_base_component_2_0_0_t          super;  /**< base BTL component */
 
@@ -225,6 +239,8 @@ struct mca_btl_openib_component_t {
     unsigned int ib_path_record_service_level;
 #endif
     unsigned int ib_path_selection_strategy;
+    mca_btl_openib_adaptive_dst_t ***src_dst_levels;
+
     int     use_eager_rdma;
     int     eager_rdma_threshold; /**< After this number of msg, use RDMA for short messages, always */
     int     eager_rdma_num;
