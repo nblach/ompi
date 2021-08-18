@@ -449,7 +449,7 @@ static inline uint8_t get_level( mca_btl_openib_adaptive_dst_t *entry,
 }
 
 static inline int get_lid_offset( mca_pml_bfo_send_request_t* sendreq,
-                                  mca_pml_base_btl_t* bml_btl )
+                                  mca_bml_base_btl_t* bml_btl )
 {
     uint16_t src_lid, dst_lid;
     uint8_t start, end, index;
@@ -482,8 +482,8 @@ static inline int get_lid_offset( mca_pml_bfo_send_request_t* sendreq,
         index = (rand() % (end-start)) + start;
     } else {
         // Select lid from the given level using round-robin
-        index = start + entry->next_index;
-        entry->next_index = (entry->next_index + 1) % (end-start);
+        index = start + entry->next_index[level];
+        entry->next_index[level] = (entry->next_index[level] + 1) % (end-start);
     }
     return entry->level_idx_to_layer_offset[index];
 }
