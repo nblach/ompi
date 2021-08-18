@@ -301,16 +301,16 @@ static mca_btl_openib_adaptive_dst_t *create_hops_entry(uint8_t levels, uint8_t 
   s2:
     free(entry->level_idx_range);
   s1:
-    free(entry)
+    free(entry);
     return NULL;
 }
 
-static void destroy_hops_entry(mca_btl_openib_adaptive_dst_t **entry) {
-    free(*entry->level_idx_range);
-    free(*entry->level_hops);
-    free(*entry->level_idx_to_layer_offset);
-    free(*entry->prev_index);
-    *entry = NULL;
+static void destroy_hops_entry(mca_btl_openib_adaptive_dst_t *entry) {
+    free(entry->level_idx_range);
+    free(entry->level_hops);
+    free(entry->level_idx_to_layer_offset);
+    free(entry->prev_index);
+    free(entry);
 }
 
 /*
@@ -2446,6 +2446,21 @@ btl_openib_component_init(int *num_btl_modules,
     mca_base_var_source_t source;
     int list_count = 0;
 
+    mca_btl_openib_adaptive_dst_t *temp_entry = create_hops_entry(128, 128);
+    
+    if(NULL == temp_entry) {
+        BTL_ERROR(("Failed malloc: %s:%d", __FILE__, __LINE__));
+        goto no_btls;
+    }
+
+    FILE *fp;
+    mca_btl_openib_adaptive_dst_t *entry;
+    char *line = NULL;
+    uint16_t src, dst_base, dst;
+    uint8_t hops, hops_prev, k, level, layers = 0;
+    size_t len = 0;
+    ssize_t read;
+
     /* initialization */
     *num_btl_modules = 0;
     num_devs = 0;
@@ -2780,25 +2795,11 @@ btl_openib_component_init(int *num_btl_modules,
         mca_btl_openib_component.src_dst_levels =
             (mca_btl_openib_adaptive_dst_t ***) calloc(MAX_LID, sizeof(mca_btl_openib_adaptive_dst_t**));
 
-        if(NULL == mca_btl_openib_component.stc_dst_levels) {
+        if(NULL == mca_btl_openib_component.src_dst_levels) {
             BTL_ERROR(("Failed malloc: %s:%d", __FILE__, __LINE__));
             goto no_btls;
         }
         
-        mca_btl_openib_adaptive_dst_t *temp_entry = create_hops_entry(128, 128);
-        if(NULL == temp_entry) {
-            BTL_ERROR(("Failed malloc: %s:%d", __FILE__, __LINE__));
-            goto no_btls;
-        }
-
-        FILE *fp;
-        mca_btl_openib_adaptive_dst_t *entry;
-        char *line = NULL;
-        uint16_t src, dst_base, dst;
-        uint8_t hops, hops_prev, i, level, layers = 0;
-        size_t len = 0;
-        ssize_t read;
-
         fp = fopen("/scratch/hops.txt", "r");
         if (fp == NULL) {
             BTL_ERROR(("Failed to read hops file: %s:%d", __FILE__, __LINE__));
@@ -2806,8 +2807,8 @@ btl_openib_component_init(int *num_btl_modules,
         }
 
         while ((read = getline(&line, &len, fp)) != -1) {
-            sscanf(strtok_r(line, " ",&line));
-            dst_base = sscanf(strtok_r(line, " ",&line));
+            strtok_r(line, " ",&line);
+            dst_base = atoi(strtok_r(line, " ",&line));
             if(layers == 0) {
                 src = dst_base;
             } else if (src != dst_base) {
@@ -2819,16 +2820,16 @@ btl_openib_component_init(int *num_btl_modules,
 
         while ((read = getline(&line, &len, fp)) != -1) {
             level = 0;
-            src = sscanf(strtok_r(line, " ",&line));
-            dst_base = sscanf(strtok_r(line, " ",&line));
-            dst = sscanf(strtok_r(line, " ",&line));
-            hops = sscanf(strtok_r(line, "\n",&line));
+            src = atoi(strtok_r(line, " ",&line));
+            dst_base = atoi(strtok_r(line, " ",&line));
+            dst = atoi(strtok_r(line, " ",&line));
+            hops = atoi(strtok_r(line, "\n",&line));
 
             if(mca_btl_openib_component.src_dst_levels[src] == NULL) {
                 mca_btl_openib_component.src_dst_levels[src] =
                     (mca_btl_openib_adaptive_dst_t **) calloc(MAX_LID, sizeof(mca_btl_openib_adaptive_dst_t*));
 
-                if(NULL == mca_btl_openib_component.stc_dst_levels[src]) {
+                if(NULL == mca_btl_openib_component.src_dst_levels[src]) {
                     BTL_ERROR(("Failed malloc: %s:%d", __FILE__, __LINE__));
                     goto no_btls;
                 }
@@ -2838,19 +2839,19 @@ btl_openib_component_init(int *num_btl_modules,
             temp_entry->level_hops[0] = hops;
             temp_entry->level_idx_to_layer_offset[0] = dst - dst_base;
 
-            for(i = 1; i < layers; i++) {
-                src = sscanf(strtok_r(line, " ",&line));
-                if(dst_base != sscanf(strtok_r(line, " ",&line))) {
+            for(k = 1; k < layers; k++) {
+                src = atoi(strtok_r(line, " ",&line));
+                if(dst_base != atoi(strtok_r(line, " ",&line))) {
                     BTL_ERROR(("Failed reading path hops file, inconsistent lmc: %s:%d", __FILE__, __LINE__));
                     goto no_btls;
                 }
-                dst = sscanf(strtok_r(line, " ",&line));
-                hops = sscanf(strtok_r(line, "\n",&line));
+                dst = atoi(strtok_r(line, " ",&line));
+                hops = atoi(strtok_r(line, "\n",&line));
                 if(hops != temp_entry->level_hops[level]) {
                     level++;
                 }
-                temp_entry->level_idx_to_layer_offset[i] = dst - dst_base;
-                temp_entry->level_idx_range[level] = i+1;
+                temp_entry->level_idx_to_layer_offset[k] = dst - dst_base;
+                temp_entry->level_idx_range[level] = k+1;
                 temp_entry->level_hops[level] = hops;
             }
 
@@ -2868,10 +2869,14 @@ btl_openib_component_init(int *num_btl_modules,
 
         fclose(fp);
         fp = NULL;
-        if (line)
+        if (line) {
             free(line);
+            line = NULL;
+        }
+
         
-        destroy_hops_entry(&temp_entry);
+        destroy_hops_entry(temp_entry);
+        temp_entry = NULL;
     }
 
 
@@ -2972,7 +2977,7 @@ btl_openib_component_init(int *num_btl_modules,
             if(mca_btl_openib_component.src_dst_levels[i] != NULL) {
                 for(int j = 0; j < MAX_LID; j++) {
                     if(mca_btl_openib_component.src_dst_levels[i][j] != NULL) {
-                        destroy_hops_entry(&mca_btl_openib_component.src_dst_levels[i][j]);
+                        destroy_hops_entry(mca_btl_openib_component.src_dst_levels[i][j]);
                     }
                 }
                 free(mca_btl_openib_component.src_dst_levels[i]);
@@ -2982,7 +2987,7 @@ btl_openib_component_init(int *num_btl_modules,
     }
 
     if(temp_entry) {
-        destroy_hops_entry(&temp_entry);
+        destroy_hops_entry(temp_entry);
     }
     if(fp) {
         fclose(fp);
