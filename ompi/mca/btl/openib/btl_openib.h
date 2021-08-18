@@ -165,7 +165,7 @@ typedef struct mca_btl_openib_adaptive_dst_t {
     /* Array containing the layer offsets sorted according to level */
     uint8_t *level_idx_to_layer_offset;
     /* Used for round_robin */
-    uint8_t *prev_index;
+    uint8_t *next_index;
 } mca_btl_openib_adaptive_dst_t;
 
 struct mca_btl_openib_component_t {

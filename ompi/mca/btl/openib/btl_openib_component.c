@@ -288,8 +288,8 @@ static mca_btl_openib_adaptive_dst_t *create_hops_entry(uint8_t levels, uint8_t 
     if(NULL == entry->level_idx_to_layer_offset) {
         goto s3;
     }
-    entry->prev_index = (uint8_t *) calloc(levels, sizeof(uint8_t));
-    if(NULL == entry->prev_index) {
+    entry->next_index = (uint8_t *) calloc(levels, sizeof(uint8_t));
+    if(NULL == entry->next_index) {
         goto s4;
     }
     return entry;
@@ -309,7 +309,7 @@ static void destroy_hops_entry(mca_btl_openib_adaptive_dst_t *entry) {
     free(entry->level_idx_range);
     free(entry->level_hops);
     free(entry->level_idx_to_layer_offset);
-    free(entry->prev_index);
+    free(entry->next_index);
     free(entry);
 }
 

@@ -427,6 +427,67 @@ mca_pml_bfo_send_request_start_btl( mca_pml_bfo_send_request_t* sendreq,
     return rc;
 }
 
+static inline uint8_t get_level( mca_btl_openib_adaptive_dst_t *entry, 
+                                 size_t msg_in_bytes)
+{
+    uint8_t i, hops, index = 0;
+    // represents the msg size at which we start to use paths with index+1 hops
+    static size_t hop_range[] = {0, 64, 256, 512, 1024, 2048};
+    
+    if(entry->levels <= 1 || entry->level_hops[0] == 0) {
+        return 0;
+    }
+    
+    for(i = 0; i < entry->levels; i++) {
+        hops = entry->level_hops[i];
+        if(hops > 6 || msg_in_bytes < hop_range[hops-1]) {
+            return index;
+        }
+        index = i;
+    }
+    return index;
+}
+
+static inline int get_lid_offset( mca_pml_bfo_send_request_t* sendreq,
+                                  mca_pml_base_btl_t* bml_btl )
+{
+    uint16_t src_lid, dst_lid;
+    uint8_t start, end, index;
+    size_t msg_in_bytes;
+    mca_btl_openib_adaptive_dst_t *entry;
+    
+
+    if (!sendreq || !bml_btl || !bml_btl->btl_endpoint || 
+            !(((mca_btl_base_endpoint_t*) bml_btl->btl_endpoint)->endpoint_btl)) {
+        return 0;
+    }
+    /* when rank (i)sends data to itself the btl can be invalid, so must test
+       the last to pointers in the if statement above
+     */
+
+    /* really bad hack to get src/dst lids, but oh well, it's only a prototype
+       WRN: not tested for anything other than openib btl, so don't expect
+       an 'eierlegende Wollmilchsau'
+     */
+    src_lid = ((mca_btl_openib_module_t*) bml_btl->btl_endpoint->endpoint_btl)->lid;
+    dst_lid = ((mca_btl_openib_rem_info_t) bml_btl->btl_endpoint->rem_info).rem_lid;
+    msg_in_bytes = sendreq->req_send.req_bytes_packed;
+    entry = mca_btl_openib_component.src_dst_levels[src_lid][dst_lid];
+    uint8_t level = get_level(entry, msg_in_bytes);
+    start = (level == 0) ? 0 : entry->level_idx_range[level-1];
+    end = entry->level_idx_range[level];
+    
+    if (1 == mca_btl_openib_component.ib_path_selection_strategy) {
+        // Select random lid from the given level
+        index = (rand() % (end-start)) + start;
+    } else {
+        // Select lid from the given level using round-robin
+        index = start + entry->next_index;
+        entry->next_index = (entry->next_index + 1) % (end-start);
+    }
+    return entry->level_idx_to_layer_offset[index];
+}
+
 static inline int
 mca_pml_bfo_send_request_start( mca_pml_bfo_send_request_t* sendreq )
 {   
@@ -464,8 +525,10 @@ mca_pml_bfo_send_request_start( mca_pml_bfo_send_request_t* sendreq )
         if (0 == mca_btl_openib_component.ib_path_selection_strategy) {
             bml_btl = mca_bml_base_btl_array_get_next(&endpoint->btl_eager);
         } else {
-            size_t index = rand() % endpoint->btl_eager.arr_size;
-            bml_btl = mca_bml_base_btl_array_get_index(&endpoint->btl_eager, index);
+            bml_btl = mca_bml_base_btl_array_get_index(&endpoint->btl_eager, 0);
+            if ((rc = get_lid_offset(sendreq, bml_btl))) {
+                bml_btl = mca_bml_base_btl_array_get_index(&endpoint->btl_eager, rc);
+            }
         }
         rc = mca_pml_bfo_send_request_start_btl(sendreq, bml_btl);
         if( OPAL_LIKELY(OMPI_ERR_OUT_OF_RESOURCE != rc) )
