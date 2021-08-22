@@ -2456,6 +2456,7 @@ btl_openib_component_init(int *num_btl_modules,
     FILE *fp;
     mca_btl_openib_adaptive_dst_t *entry;
     char *line = NULL;
+    char *saveptr;
     uint16_t src, dst_base, dst;
     uint8_t hops, hops_prev, k, level, layers = 0;
     size_t len = 0;
@@ -2807,8 +2808,8 @@ btl_openib_component_init(int *num_btl_modules,
         }
 
         while ((read = getline(&line, &len, fp)) != -1) {
-            strtok_r(line, " ",&line);
-            dst_base = atoi(strtok_r(line, " ",&line));
+            strtok_r(line, " ",&saveptr);
+            dst_base = atoi(strtok_r(NULL, " ",&saveptr));
             if(layers == 0) {
                 src = dst_base;
             } else if (src != dst_base) {
@@ -2820,10 +2821,10 @@ btl_openib_component_init(int *num_btl_modules,
 
         while ((read = getline(&line, &len, fp)) != -1) {
             level = 0;
-            src = atoi(strtok_r(line, " ",&line));
-            dst_base = atoi(strtok_r(line, " ",&line));
-            dst = atoi(strtok_r(line, " ",&line));
-            hops = atoi(strtok_r(line, "\n",&line));
+            src = atoi(strtok_r(line, " ",&saveptr));
+            dst_base = atoi(strtok_r(NULL, " ",&saveptr));
+            dst = atoi(strtok_r(NULL, " ",&saveptr));
+            hops = atoi(strtok_r(NULL, "\n",&saveptr));
 
             if(mca_btl_openib_component.src_dst_levels[src] == NULL) {
                 mca_btl_openib_component.src_dst_levels[src] =
@@ -2840,13 +2841,14 @@ btl_openib_component_init(int *num_btl_modules,
             temp_entry->level_idx_to_layer_offset[0] = dst - dst_base;
 
             for(k = 1; k < layers; k++) {
-                src = atoi(strtok_r(line, " ",&line));
-                if(dst_base != atoi(strtok_r(line, " ",&line))) {
+		read = getline(&line, &len, fp);
+                src = atoi(strtok_r(line, " ",&saveptr));
+                if(dst_base != atoi(strtok_r(NULL, " ",&saveptr))) {
                     BTL_ERROR(("Failed reading path hops file, inconsistent lmc: %s:%d", __FILE__, __LINE__));
                     goto no_btls;
                 }
-                dst = atoi(strtok_r(line, " ",&line));
-                hops = atoi(strtok_r(line, "\n",&line));
+                dst = atoi(strtok_r(NULL, " ",&saveptr));
+                hops = atoi(strtok_r(NULL, "\n",&saveptr));
                 if(hops != temp_entry->level_hops[level]) {
                     level++;
                 }

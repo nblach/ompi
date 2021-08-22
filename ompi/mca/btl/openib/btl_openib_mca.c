@@ -424,7 +424,7 @@ int btl_openib_register_mca_params(void)
                    "Select path selection strategy in case multiple paths are available "
                    "(must be >= 0, 0 = default (round-robin), 1 = message size (random), "
                    "2 = message size (round-robin))",
-                   0, &mca_btl_openib_component.ib_path_selection_strategy, 0));
+                   1, &mca_btl_openib_component.ib_path_selection_strategy, 0));
 
     CHECK(reg_int("use_eager_rdma", NULL, "Use RDMA for eager messages "
                   "(-1 = use device default, 0 = do not use eager RDMA, "
