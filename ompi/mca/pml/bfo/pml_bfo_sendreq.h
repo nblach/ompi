@@ -432,7 +432,12 @@ static inline uint8_t get_level( mca_btl_openib_adaptive_dst_t *entry,
 {
     uint8_t i, hops, index = 0;
     // represents the msg size at which we start to use paths with index+1 hops
-    static size_t hop_range[] = {0, 64, 256, 512, 1024, 2048};
+    static size_t hop_range[3][6] = {
+	{0, 32, 64, 128, 256, 512},
+	{0, 64, 256, 512, 1024, 2048},
+	{0, 128, 1024, 2048, 4096, 8192}
+    };
+    uint8_t j = mca_btl_openib_component.ib_path_selection_strategy % 3;
     
     if(entry->levels <= 1 || entry->level_hops[0] == 0) {
         return 0;
@@ -440,7 +445,7 @@ static inline uint8_t get_level( mca_btl_openib_adaptive_dst_t *entry,
     
     for(i = 0; i < entry->levels; i++) {
         hops = entry->level_hops[i];
-        if(hops > 6 || msg_in_bytes < hop_range[hops-1]) {
+        if(hops > 6 || msg_in_bytes < hop_range[j][hops-1]) {
             return index;
         }
         index = i;
@@ -477,7 +482,7 @@ static inline int get_lid_offset( mca_pml_bfo_send_request_t* sendreq,
     start = (level == 0) ? 0 : entry->level_idx_range[level-1];
     end = entry->level_idx_range[level];
     
-    if (1 == mca_btl_openib_component.ib_path_selection_strategy) {
+    if (mca_btl_openib_component.ib_path_selection_strategy < 4) {
         // Select random lid from the given level
         index = (rand() % (end-start)) + start;
     } else {
@@ -495,6 +500,10 @@ mca_pml_bfo_send_request_start( mca_pml_bfo_send_request_t* sendreq )
     mca_bml_base_endpoint_t* endpoint = (mca_bml_base_endpoint_t*)
                                         sendreq->req_send.req_base.req_proc->proc_endpoints[OMPI_PROC_ENDPOINT_TAG_BML];
     size_t i;
+    //size_t msg_in_bytes;
+    //FILE *file;
+    //char hostname[128];
+    //char buffer[256];
 
     if( OPAL_UNLIKELY(endpoint == NULL) ) {
         return OMPI_ERR_UNREACH;
@@ -516,6 +525,18 @@ mca_pml_bfo_send_request_start( mca_pml_bfo_send_request_t* sendreq )
 #endif /* PML_BFO */
 
     MCA_PML_BASE_SEND_START( &sendreq->req_send.req_base );
+
+    //gethostname(hostname, sizeof(hostname));
+    //strcpy(buffer, "/scratch/msg_sizes/msg_sizes_");
+    //strcat(buffer, hostname);
+    //msg_in_bytes = sendreq->req_send.req_bytes_packed;
+    //file=fopen(buffer, "a");
+    //if(file == NULL) {
+    //    printf("Error!");   
+    //    exit(1);             
+    //}
+    //fprintf(file, "%d\n", msg_in_bytes);
+    //fclose(file);
 
     for(i = 0; i < mca_bml_base_btl_array_get_size(&endpoint->btl_eager); i++) {
         mca_bml_base_btl_t* bml_btl;
