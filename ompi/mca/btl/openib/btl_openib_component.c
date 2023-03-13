@@ -3486,6 +3486,10 @@ static void handle_wc(mca_btl_openib_device_t* device, const uint32_t cq,
         case IBV_WC_SEND:
             OPAL_OUTPUT((-1, "Got WC: RDMA_WRITE or SEND"));
             if(openib_frag_type(des) == MCA_BTL_OPENIB_FRAG_SEND) {
+                //TODO: Start debug output
+                uint16_t debug_value = (uint16_t)(*((to_send_frag(des))->hdr)).tag;
+                BTL_OUTPUT(("Work Completion Tag: %u",debug_value));
+                //TODO: END debug output
                 opal_list_item_t *i;
                 while((i = opal_list_remove_first(&to_send_frag(des)->coalesced_frags))) {
                     btl_ownership = (to_base_frag(i)->base.des_flags & MCA_BTL_DES_FLAGS_BTL_OWNERSHIP);

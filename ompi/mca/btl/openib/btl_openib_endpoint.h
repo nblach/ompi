@@ -543,6 +543,11 @@ acquire_eager_rdma_send_credit(mca_btl_openib_endpoint_t *endpoint)
 static inline int post_send(mca_btl_openib_endpoint_t *ep,
         mca_btl_openib_send_frag_t *frag, const bool rdma, int do_signal)
 {
+    //TODO: Start debug output
+    uint16_t debug_value = (uint16_t)((*(frag->hdr)).tag);
+    BTL_OUTPUT(("Send Frag Header Tag: %u",debug_value));
+    //TODO: END debug output
+
     mca_btl_openib_module_t *openib_btl = ep->endpoint_btl;
     mca_btl_openib_segment_t *seg = &to_base_frag(frag)->segment;
     struct ibv_sge *sg = &to_com_frag(frag)->sg_entry;
