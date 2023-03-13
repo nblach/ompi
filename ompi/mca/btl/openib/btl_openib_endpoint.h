@@ -39,6 +39,7 @@
 #include <string.h>
 #include "ompi/mca/btl/base/btl_base_error.h"
 #include "connect/base.h"
+#include <time.h>
 
 #define QP_TX_BATCH_COUNT 64
 
@@ -544,8 +545,13 @@ static inline int post_send(mca_btl_openib_endpoint_t *ep,
         mca_btl_openib_send_frag_t *frag, const bool rdma, int do_signal)
 {
     //TODO: Start debug output
-    uint16_t debug_value = (uint16_t)((*(frag->hdr)).tag);
-    BTL_OUTPUT(("Send Frag Header Tag: %u",debug_value));
+    uint16_t frag_tag = (uint16_t)((*(frag->hdr)).tag);
+    BTL_OUTPUT(("Send Frag Tag: %u",frag_tag));
+	if(mca_btl_openib_component.bw_est_start_time == -1){
+    	BTL_OUTPUT(("Start Time: %li",clock()));
+		mca_btl_openib_component.bw_est_start_time = clock();
+		mca_btl_openib_component.bw_est_tag = frag_tag;
+	}
     //TODO: END debug output
 
     mca_btl_openib_module_t *openib_btl = ep->endpoint_btl;
