@@ -2463,11 +2463,11 @@ btl_openib_component_init(int *num_btl_modules,
     size_t len = 0;
     ssize_t read;
 
-	// TODO: Start BW-EST
-	mca_btl_openib_component.bw_est_start_time = -1;
-	mca_btl_openib_component.bw_est_duration = -1;
-	mca_btl_openib_component.bw_est_tag = -1;
-	// TODO: End BW-EST
+    // TODO: Start BW-EST
+    mca_btl_openib_component.bw_est_ongoing = false;
+    mca_btl_openib_component.bw_est_duration = -1;
+    mca_btl_openib_component.bw_est_tag = -1;
+    // TODO: End BW-EST
 
     /* initialization */
     *num_btl_modules = 0;
@@ -3496,15 +3496,19 @@ static void handle_wc(mca_btl_openib_device_t* device, const uint32_t cq,
                 //TODO: Start debug output
                 uint16_t frag_tag = (uint16_t)(*((to_send_frag(des))->hdr)).tag;
                 BTL_OUTPUT(("Work Completion Tag: %u",frag_tag));
-				bool bw_est_active = (mca_btl_openib_component.bw_est_start_time != -1);
-				bool bw_est_same_tag = (mca_btl_openib_component.bw_est_tag == frag_tag);
-				if(bw_est_active && bw_est_same_tag){
-					long int duration = clock() - mca_btl_openib_component.bw_est_start_time;
-					mca_btl_openib_component.bw_est_duration = duration;
-					BTL_OUTPUT(("Duration: %li",duration));
-					mca_btl_openib_component.bw_est_start_time = -1;
-					mca_btl_openib_component.bw_est_tag = -1;
-				}
+                bool bw_est_same_tag = (mca_btl_openib_component.bw_est_tag == frag_tag);
+                if(mca_btl_openib_component.bw_est_ongoing && bw_est_same_tag){
+                    struct timespec start_time, end_time;
+                    double duration;
+                    start_time = mca_btl_openib_component.bw_est_start_time;
+                    clock_gettime(CLOCK_MONOTONIC, &end_time);
+                    duration = (end_time.tv_sec - start_time.tv_sec);
+                    duration += (end_time.tv_nsec - start_time.tv_nsec) / 1000000000.0;
+                    mca_btl_openib_component.bw_est_duration = duration;
+                    BTL_OUTPUT(("Duration: %f us",duration * 1000000.0));
+                    mca_btl_openib_component.bw_est_tag = -1;
+                    mca_btl_openib_component.bw_est_ongoing = false;
+                }
                 //TODO: END debug output
                 opal_list_item_t *i;
                 while((i = opal_list_remove_first(&to_send_frag(des)->coalesced_frags))) {

@@ -547,10 +547,12 @@ static inline int post_send(mca_btl_openib_endpoint_t *ep,
     //TODO: Start debug output
     uint16_t frag_tag = (uint16_t)((*(frag->hdr)).tag);
     BTL_OUTPUT(("Send Frag Tag: %u",frag_tag));
-	if(mca_btl_openib_component.bw_est_start_time == -1){
-    	BTL_OUTPUT(("Start Time: %li",clock()));
-		mca_btl_openib_component.bw_est_start_time = clock();
-		mca_btl_openib_component.bw_est_tag = frag_tag;
+	if(mca_btl_openib_component.bw_est_ongoing == false){
+        struct timespec start_time;
+        clock_gettime(CLOCK_MONOTONIC, &start_time);
+        mca_btl_openib_component.bw_est_start_time = start_time;
+        mca_btl_openib_component.bw_est_tag = frag_tag;
+        mca_btl_openib_component.bw_est_ongoing == true;
 	}
     //TODO: END debug output
 

@@ -241,11 +241,12 @@ struct mca_btl_openib_component_t {
     unsigned int ib_path_selection_strategy;
     mca_btl_openib_adaptive_dst_t ***src_dst_levels;
 
-	// TODO: Start BW-EST data
-	long int bw_est_start_time;
-	long int bw_est_duration;
-	uint16_t bw_est_tag;
-	// TODO: End BW-EST data
+    // TODO: Start BW-EST data
+    bool bw_est_ongoing;
+    struct timespec bw_est_start_time;
+    double bw_est_duration;
+    uint16_t bw_est_tag;
+    // TODO: End BW-EST data
 
     int     use_eager_rdma;
     int     eager_rdma_threshold; /**< After this number of msg, use RDMA for short messages, always */
