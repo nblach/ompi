@@ -552,7 +552,7 @@ static inline int post_send(mca_btl_openib_endpoint_t *ep,
         clock_gettime(CLOCK_MONOTONIC, &start_time);
         mca_btl_openib_component.bw_est_start_time = start_time;
         mca_btl_openib_component.bw_est_tag = frag_tag;
-        mca_btl_openib_component.bw_est_ongoing == true;
+        mca_btl_openib_component.bw_est_ongoing = true;
 	}
     //TODO: END debug output
 
