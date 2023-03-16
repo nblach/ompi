@@ -42,22 +42,21 @@
 OBJ_CLASS_INSTANCE(mca_pml_bfo_send_range_t, ompi_free_list_item_t,
         NULL, NULL);
 
-
 // TODO: Start Debug Output
 static void print_debug_data(mca_bml_base_btl_t* bml_btl, mca_btl_base_descriptor_t* des)
 {
 	if(des){
 		size_t n_src_segs = des->des_src_cnt;
 		size_t n_dst_segs = des->des_dst_cnt;
-		BTL_OUTPUT(("BML-DEBUG: Number of source segments %d", n_src_segs));
-		BTL_OUTPUT(("BML-DEBUG: Number of destination segments %d", n_dst_segs));
+		BTL_OUTPUT(("BML-DEBUG: Number of source segments %u", n_src_segs));
+		BTL_OUTPUT(("BML-DEBUG: Number of destination segments %u", n_dst_segs));
 		for(int i = 0; i < n_src_segs; i++){
-			BTL_OUTPUT(("BML-DEBUG: Source segment %d has length %d", i, des->des_src[i].seg_len));
-			BTL_OUTPUT(("BML-DEBUG: Source segment %d has address %d", i, des->des_src[i].seg_addr));
+			BTL_OUTPUT(("BML-DEBUG: Source segment %d has length %u", i, des->des_src[i].seg_len));
+			BTL_OUTPUT(("BML-DEBUG: Source segment %d has address %u", i, des->des_src[i].seg_addr));
 		}
 		for(int i = 0; i < n_dst_segs; i++){
-			BTL_OUTPUT(("BML-DEBUG: Destination segment %d has length %d", i, des->des_dst[i].seg_len));
-			BTL_OUTPUT(("BML-DEBUG: Destination segment %d has address %d", i, des->des_dst[i].seg_addr));
+			BTL_OUTPUT(("BML-DEBUG: Destination segment %d has length %u", i, des->des_dst[i].seg_len));
+			BTL_OUTPUT(("BML-DEBUG: Destination segment %d has address %u", i, des->des_dst[i].seg_addr));
 		}
 	}
 	else{

@@ -86,6 +86,9 @@ int mca_pml_bfo_recv(void *addr,
                      struct ompi_communicator_t *comm,
                      ompi_status_public_t * status)
 {
+
+	BTL_OUTPUT(("The function \"mca_pml_bfo_recv\" is actually reached"));
+
     int rc;
     mca_pml_bfo_recv_request_t *recvreq;
     MCA_PML_BFO_RECV_REQUEST_ALLOC(recvreq);
