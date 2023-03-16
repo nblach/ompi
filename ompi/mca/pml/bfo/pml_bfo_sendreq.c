@@ -1363,6 +1363,11 @@ int mca_pml_bfo_send_request_put_frag( mca_pml_bfo_rdma_frag_t* frag )
     PERUSE_TRACE_COMM_OMPI_EVENT( PERUSE_COMM_REQ_XFER_CONTINUE,
                                   &(((mca_pml_bfo_send_request_t*)frag->rdma_req)->req_send.req_base), save_size, PERUSE_SEND );
 
+	// TODO: Debug Output
+	BTL_OUTPUT(("mca_pml_bfo_send_request_put_frag"));
+	print_debug_data(bml_btl, des);
+	// TODO: Debug Output
+
     rc = mca_bml_base_put(bml_btl, des);
     if( OPAL_UNLIKELY(OMPI_SUCCESS != rc) ) {
         mca_bml_base_free(bml_btl, des);

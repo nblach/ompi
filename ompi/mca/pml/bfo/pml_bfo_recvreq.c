@@ -44,6 +44,30 @@ int mca_pml_bfo_cuda_need_buffers(mca_pml_bfo_recv_request_t* recvreq,
 #include "pml_bfo_failover.h"
 #endif /* PML_BFO */
 
+// TODO: Start Debug Output
+static void print_debug_data_recv(mca_bml_base_btl_t* bml_btl, mca_btl_base_descriptor_t* des)
+{
+	if(des){
+		size_t n_src_segs = des->des_src_cnt;
+		size_t n_dst_segs = des->des_dst_cnt;
+		BTL_OUTPUT(("BML-DEBUG: Number of source segments %d", n_src_segs));
+		BTL_OUTPUT(("BML-DEBUG: Number of destination segments %d", n_dst_segs));
+		for(int i = 0; i < n_src_segs; i++){
+			BTL_OUTPUT(("BML-DEBUG: Source segment %d has length %d", i, des->des_src[i].seg_len));
+			BTL_OUTPUT(("BML-DEBUG: Source segment %d has address %d", i, des->des_src[i].seg_addr));
+		}
+		for(int i = 0; i < n_dst_segs; i++){
+			BTL_OUTPUT(("BML-DEBUG: Destination segment %d has length %d", i, des->des_dst[i].seg_len));
+			BTL_OUTPUT(("BML-DEBUG: Destination segment %d has address %d", i, des->des_dst[i].seg_addr));
+		}
+	}
+	else{
+		BTL_OUTPUT(("BML-DEBUG: The descriptor pointer is NULL"));
+	}
+}
+// TODO: End Debug Output
+
+
 void mca_pml_bfo_recv_request_process_pending(void)
 {
     mca_pml_bfo_recv_request_t* recvreq;
@@ -261,6 +285,11 @@ int mca_pml_bfo_recv_request_ack_send_btl(
     des->des_cbdata = hdr_dst_req;
 #endif /* PML_BFO */
 
+	// TODO: Debug Output
+	BTL_OUTPUT(("[RECV] mca_pml_bfo_recv_request_ack_send_btl"));
+	print_debug_data_recv(bml_btl, des);
+	// TODO: Debug Output
+
     rc = mca_bml_base_send(bml_btl, des, MCA_PML_BFO_HDR_TYPE_ACK);
     if( OPAL_LIKELY( rc >= 0 ) ) {
 #if PML_BFO
@@ -432,6 +461,12 @@ int mca_pml_bfo_recv_request_get_frag( mca_pml_bfo_rdma_frag_t* frag )
     PERUSE_TRACE_COMM_OMPI_EVENT(PERUSE_COMM_REQ_XFER_CONTINUE,
                                  &(recvreq->req_recv.req_base),
                                  frag->rdma_length, PERUSE_RECV);
+
+	// TODO: Debug Output
+	BTL_OUTPUT(("[RECV] mca_pml_bfo_recv_request_get_frag"));
+	print_debug_data_recv(bml_btl, descriptor);
+	// TODO: Debug Output
+
 
     /* queue up get request */
     rc = mca_bml_base_get(bml_btl,descriptor);
@@ -889,6 +924,12 @@ int mca_pml_bfo_recv_request_schedule_once( mca_pml_bfo_recv_request_t* recvreq,
         PERUSE_TRACE_COMM_OMPI_EVENT( PERUSE_COMM_REQ_XFER_CONTINUE,
                                       &(recvreq->req_recv.req_base), size,
                                       PERUSE_RECV);
+
+		// TODO: Debug Output
+		BTL_OUTPUT(("[RECV] mca_pml_bfo_recv_request_schedule_once"));
+		print_debug_data_recv(bml_btl, descriptor);
+		// TODO: Debug Output
+
 
         /* send rdma request to peer */
         rc = mca_bml_base_send(bml_btl, ctl, MCA_PML_BFO_HDR_TYPE_PUT);
