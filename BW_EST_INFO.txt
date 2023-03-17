@@ -1,0 +1,42 @@
+
+Overall Goal:
+
+- Implement an adaptive routing strategy that estimates the congestion on different paths and, based on congestion, decides whether to use shortest paths or non-shortest paths.
+
+Building blocks needed:
+
+- Load-balancing routing
+
+-- To implement the load-balancing routing, we need timing measurements to estimate congestion (see below). Implementing the routing itself has not yet been started.
+
+- Timing measurements:
+
+-- Overview: 
+
+--- To estimate the congestion, we want to track the time between enqueuing a packet into the send queue and receiving the corresponding completion message.
+
+--- We should start the timers at the place in the code where the packets are enqueued into the send queue of the lower layer, which is Infiniband verbs (ibv). This happens in the function "post_send" which is defined in "ompi/mca/btl/openib/btl_openib_endpoint.h".
+
+--- We should stop the timers and compute the duration of packets in-flight at the point, where the completion message is processed. This happens in the function "handle_wc" which is defined in "ompi/mca/btl/openib/btl_openib_component.c".
+
+-- Progress:
+
+--- A first, very naive timing measurement functionality has been implemented for debugging. Starting and stopping the timers happens in the two functions mentioned above. The timers themselves are stored in the struct "mca_btl_openib_component_t" which is defined in the file "ompi/mca/btl/openib/btl_openib.h".
+
+-- Problems:
+
+--- At the MPI level, the packets are not fragmented, i.e., if we send 1GB, we observe only one large packet. For timing measurements and load-balancing, we need to fragment the packets earlier.
+
+- Packet Fragmenting
+
+-- Overview:
+
+--- To reduce the complexity, we should implement the fragmenting at the highest possible layer. We identified that the most suitable point for fragmenting is probably in the function "mca_pml_bfo_irecv" which is defined in "ompi/mca/pml/bfo/pml_bfo_irecv.c". For the one-to-one benchmark, we already identified that the data packet of the transfer is sent by calling said function. It is likely that for other benchmarks, the fragmenting also needs to be implemented in the corresponding send function.
+
+-- Problems:
+
+--- Currently, the function mentioned above returns the request that it generated. If we implement a function that splits one request in many requests, it is not clear what to return. Can we simply return the last of the requests? Can we somehow return a "ghost-request" that we manually set to "completed" once all the small requests are completed?
+
+
+
+
