@@ -26,6 +26,10 @@
 #include "ompi/peruse/peruse-internal.h"
 #include "ompi/message/message.h"
 
+// Only used to use the BTL output-function and get traces
+#include "ompi/mca/btl/base/btl_base_error.h"
+#include <execinfo.h>
+
 int mca_pml_bfo_irecv_init(void *addr,
                            size_t count,
                            ompi_datatype_t * datatype,
@@ -59,6 +63,27 @@ int mca_pml_bfo_irecv(void *addr,
                       struct ompi_communicator_t *comm,
                       struct ompi_request_t **request)
 {
+
+
+	// TODO: Start Debug Output
+	BTL_OUTPUT(("The function \"mca_pml_bfo_irecv\" is reached"));
+	BTL_OUTPUT(("Addr: %u", addr));
+	BTL_OUTPUT(("Size: %u", count));
+	BTL_OUTPUT(("src: %d", src));
+	BTL_OUTPUT(("tag %d", tag));
+
+	// Print stack trace to debug output
+	void* callstack[128];
+	int i, frames = backtrace(callstack, 128);
+	char** strs = backtrace_symbols(callstack, frames);
+	for (i = 0; i < frames; ++i) {
+		BTL_OUTPUT(("CallStack: %s", strs[i]));
+	}
+	free(strs);
+	// TODO: End Debug Output
+
+
+
     mca_pml_bfo_recv_request_t *recvreq;
     MCA_PML_BFO_RECV_REQUEST_ALLOC(recvreq);
     if (NULL == recvreq)
@@ -73,6 +98,7 @@ int mca_pml_bfo_irecv(void *addr,
                              PERUSE_RECV);
 
     MCA_PML_BFO_RECV_REQUEST_START(recvreq);
+
     *request = (ompi_request_t *) recvreq;
     return OMPI_SUCCESS;
 }
