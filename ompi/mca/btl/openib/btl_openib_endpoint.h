@@ -546,8 +546,9 @@ static inline int post_send(mca_btl_openib_endpoint_t *ep,
 {
     //TODO: Start debug output
     uint16_t frag_tag = (uint16_t)((*(frag->hdr)).tag);
-    BTL_OUTPUT(("Send Frag Tag: %u",frag_tag));
+    BTL_OUTPUT(("[TIMERS] Sending Fragment with Tag: %u",frag_tag));
 	if(mca_btl_openib_component.bw_est_ongoing == false){
+    	BTL_OUTPUT(("[TIMERS] Starting Time Measurement: %u",frag_tag));
         struct timespec start_time;
         clock_gettime(CLOCK_MONOTONIC, &start_time);
         mca_btl_openib_component.bw_est_start_time = start_time;

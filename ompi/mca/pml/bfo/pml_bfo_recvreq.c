@@ -44,30 +44,6 @@ int mca_pml_bfo_cuda_need_buffers(mca_pml_bfo_recv_request_t* recvreq,
 #include "pml_bfo_failover.h"
 #endif /* PML_BFO */
 
-// TODO: Start Debug Output
-static void print_debug_data_recv(mca_bml_base_btl_t* bml_btl, mca_btl_base_descriptor_t* des)
-{
-	if(des){
-		size_t n_src_segs = des->des_src_cnt;
-		size_t n_dst_segs = des->des_dst_cnt;
-		BTL_OUTPUT(("BML-DEBUG: Number of source segments %u", n_src_segs));
-		BTL_OUTPUT(("BML-DEBUG: Number of destination segments %u", n_dst_segs));
-		for(int i = 0; i < n_src_segs; i++){
-			BTL_OUTPUT(("BML-DEBUG: Source segment %d has length %u", i, des->des_src[i].seg_len));
-			BTL_OUTPUT(("BML-DEBUG: Source segment %d has address %u", i, des->des_src[i].seg_addr));
-		}
-		for(int i = 0; i < n_dst_segs; i++){
-			BTL_OUTPUT(("BML-DEBUG: Destination segment %d has length %u", i, des->des_dst[i].seg_len));
-			BTL_OUTPUT(("BML-DEBUG: Destination segment %d has address %u", i, des->des_dst[i].seg_addr));
-		}
-	}
-	else{
-		BTL_OUTPUT(("BML-DEBUG: The descriptor pointer is NULL"));
-	}
-}
-// TODO: End Debug Output
-
-
 void mca_pml_bfo_recv_request_process_pending(void)
 {
     mca_pml_bfo_recv_request_t* recvreq;
@@ -285,11 +261,6 @@ int mca_pml_bfo_recv_request_ack_send_btl(
     des->des_cbdata = hdr_dst_req;
 #endif /* PML_BFO */
 
-	// TODO: Debug Output
-	BTL_OUTPUT(("[RECV] mca_pml_bfo_recv_request_ack_send_btl"));
-	print_debug_data_recv(bml_btl, des);
-	// TODO: Debug Output
-
     rc = mca_bml_base_send(bml_btl, des, MCA_PML_BFO_HDR_TYPE_ACK);
     if( OPAL_LIKELY( rc >= 0 ) ) {
 #if PML_BFO
@@ -461,106 +432,6 @@ int mca_pml_bfo_recv_request_get_frag( mca_pml_bfo_rdma_frag_t* frag )
     PERUSE_TRACE_COMM_OMPI_EVENT(PERUSE_COMM_REQ_XFER_CONTINUE,
                                  &(recvreq->req_recv.req_base),
                                  frag->rdma_length, PERUSE_RECV);
-
-
-	// TODO: Begin Custom Fragmentation
-	/*
-	// Parameter: Fragment size (currently hard-coded, make configurable later)
-	uint64_t BW_EST_FRAG_SIZE = 1024;				
-	// Number of source segments prior to fragmentation
-	size_t nss_old = descriptor->des_src_cnt;		
-	// Number of destination segments prior to fragmentation
-	size_t nds_old = descriptor->des_dst_cnt;		
-	// Number of source segments after fragmentation
-	uint64_t nss_new = 0;							
-	// Number of destination segments after fragmentation
-	uint64_t nds_new = 0;							
-	// Compute number of source segments of at most BW_EST_FRAG_SIZE bytes that are needed
-	for(size_t i = 0; i < nss_old; i++){
-		// Division with ceiling 
-		nss_new += (1 + ((descriptor->des_src[i].seg_len - 1) / BW_EST_FRAG_SIZE));
-	}
-	// Compute number of destination segments of at most BW_EST_FRAG_SIZE bytes that are needed
-	for(size_t i = 0; i < nds_old; i++){
-		// Division with ceiling 
-		nds_new += (1 + ((descriptor->des_dst[i].seg_len - 1) / BW_EST_FRAG_SIZE));
-	}
-	// Create array of new source segments @CHECK: Is that ok?
-	struct mca_btl_base_segment_t new_src_segments[nss_new];
-	// Create array of new destination segments @CHECK: Is that ok?
-	struct mca_btl_base_segment_t new_dst_segments[nds_new];
-	// Index in the array of new segments
-	uint64_t nsi = 0;
-	// Number of new segments required to fragment the current old segment
-	uint64_t nsreq = 0;
-	// Loop variable of inner loop (only allocate once)
-	size_t j;
-	// Length of new segment
-	size_t nslen;
-	// Number of bytes that still need to be fragmented
-	size_t remaining;
-	// Address of the data that still needs to be fragmented
-	size_t remaining_addr;
-	// Iterate through source segments and fragment them
-	for(size_t i = 0; i < nss_old; i++){
-		// Initialize variables
-		nsreq = (1 + ((descriptor->des_src[i].seg_len - 1) / BW_EST_FRAG_SIZE));
-		remaining = descriptor->des_src[i].seg_len;
-		remaining_addr = descriptor->des_src[i].seg_addr; 
-		// Iterate through new segments that are added for a given old segment
-		for(j = 0; j < nsreq; j++){
-			// Construct new segment
-			if(remainin >= BW_EST_FRAG_SIZE){
-				nslen = BW_EST_FRAG_SIZE;
-			}else{
-				nslen = remaining;
-			}
-			new_src_segments[nsi].seg_len = nslen;
-			new_src_segments[nsi].seg_addr = remaining_addr ;
-			// Update variables
-			nsi++;
-			remaining -= nslen;
-			remaining_addr += ns_len;
-		}
-	}
-	// Reset new segment index
-	nsi = 0;
-	// Iterate through destination segments and fragment them
-	for(size_t i = 0; i < nds_old; i++){
-		// Initialize variables
-		nsreq = (1 + ((descriptor->des_dst[i].seg_len - 1) / BW_EST_FRAG_SIZE));
-		remaining = descriptor->des_dst[i].seg_len;
-		remaining_addr = descriptor->des_dst[i].seg_addr; 
-		// Iterate through new segments that are added for a given old segment
-		for(j = 0; j < nsreq; j++){
-			// Construct new segment
-			if(remainin >= BW_EST_FRAG_SIZE){
-				nslen = BW_EST_FRAG_SIZE;
-			}else{
-				nslen = remaining;
-			}
-			new_dst_segments[nsi].seg_len = nslen;
-			new_dst_segments[nsi].seg_addr = remaining_addr ;
-			// Update variables
-			nsi++;
-			remaining -= nslen;
-			remaining_addr += ns_len;
-		}
-	}
-	// Update the descriptor with the new segments
-    descriptor->des_src = new_src_segments;
-    descriptor->des_src_cnt = nss_new;
- 	descriptor->des_dst = new_dst_segments;
-    descriptor->des_dst_cnt = nds_new;
-	// TODO: End Custom Fragmentation
-	*/
-
-
-	// TODO: Debug Output
-	BTL_OUTPUT(("[RECV] mca_pml_bfo_recv_request_get_frag"));
-	print_debug_data_recv(bml_btl, descriptor);
-	// TODO: Debug Output
-
 
     /* queue up get request */
     rc = mca_bml_base_get(bml_btl,descriptor);
@@ -1018,11 +889,6 @@ int mca_pml_bfo_recv_request_schedule_once( mca_pml_bfo_recv_request_t* recvreq,
         PERUSE_TRACE_COMM_OMPI_EVENT( PERUSE_COMM_REQ_XFER_CONTINUE,
                                       &(recvreq->req_recv.req_base), size,
                                       PERUSE_RECV);
-
-		// TODO: Debug Output
-		BTL_OUTPUT(("[RECV] mca_pml_bfo_recv_request_schedule_once (no print)"));
-		// TODO: Debug Output
-
 
         /* send rdma request to peer */
         rc = mca_bml_base_send(bml_btl, ctl, MCA_PML_BFO_HDR_TYPE_PUT);

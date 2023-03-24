@@ -109,6 +109,9 @@ struct ompi_request_t {
     ompi_request_complete_fn_t req_complete_cb; /**< Called when the request is MPI completed */
     void *req_complete_cb_data;
     ompi_mpi_object_t req_mpi_object;           /**< Pointer to MPI object that created this request */
+	bool is_ghost_request;
+	int sub_request_count;
+	void* pointer_to_sub_requests;
 };
 
 /**

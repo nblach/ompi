@@ -3495,9 +3495,10 @@ static void handle_wc(mca_btl_openib_device_t* device, const uint32_t cq,
             if(openib_frag_type(des) == MCA_BTL_OPENIB_FRAG_SEND) {
                 //TODO: Start debug output
                 uint16_t frag_tag = (uint16_t)(*((to_send_frag(des))->hdr)).tag;
-                BTL_OUTPUT(("Work Completion Tag: %u",frag_tag));
+                BTL_OUTPUT(("[TIMERS] Receiving Work Completion Tag: %u",frag_tag));
                 bool bw_est_same_tag = (mca_btl_openib_component.bw_est_tag == frag_tag);
                 if(mca_btl_openib_component.bw_est_ongoing && bw_est_same_tag){
+                	BTL_OUTPUT(("[TIMERS] Stopping time measurement: %u",frag_tag));
                     struct timespec start_time, end_time;
                     double duration;
                     start_time = mca_btl_openib_component.bw_est_start_time;
@@ -3505,7 +3506,7 @@ static void handle_wc(mca_btl_openib_device_t* device, const uint32_t cq,
                     duration = (end_time.tv_sec - start_time.tv_sec);
                     duration += (end_time.tv_nsec - start_time.tv_nsec) / 1000000000.0;
                     mca_btl_openib_component.bw_est_duration = duration;
-                    BTL_OUTPUT(("Duration: %f us",duration * 1000000.0));
+                    BTL_OUTPUT(("[TIMERS] Duration: %f us",duration * 1000000.0));
                     mca_btl_openib_component.bw_est_tag = -1;
                     mca_btl_openib_component.bw_est_ongoing = false;
                 }

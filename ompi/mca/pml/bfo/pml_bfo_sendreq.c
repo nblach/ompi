@@ -42,29 +42,6 @@
 OBJ_CLASS_INSTANCE(mca_pml_bfo_send_range_t, ompi_free_list_item_t,
         NULL, NULL);
 
-// TODO: Start Debug Output
-static void print_debug_data(mca_bml_base_btl_t* bml_btl, mca_btl_base_descriptor_t* des)
-{
-	if(des){
-		size_t n_src_segs = des->des_src_cnt;
-		size_t n_dst_segs = des->des_dst_cnt;
-		BTL_OUTPUT(("BML-DEBUG: Number of source segments %u", n_src_segs));
-		BTL_OUTPUT(("BML-DEBUG: Number of destination segments %u", n_dst_segs));
-		for(int i = 0; i < n_src_segs; i++){
-			BTL_OUTPUT(("BML-DEBUG: Source segment %d has length %u", i, des->des_src[i].seg_len));
-			BTL_OUTPUT(("BML-DEBUG: Source segment %d has address %u", i, des->des_src[i].seg_addr));
-		}
-		for(int i = 0; i < n_dst_segs; i++){
-			BTL_OUTPUT(("BML-DEBUG: Destination segment %d has length %u", i, des->des_dst[i].seg_len));
-			BTL_OUTPUT(("BML-DEBUG: Destination segment %d has address %u", i, des->des_dst[i].seg_addr));
-		}
-	}
-	else{
-		BTL_OUTPUT(("BML-DEBUG: The descriptor pointer is NULL"));
-	}
-}
-// TODO: End Debug Output
-
 void mca_pml_bfo_send_request_process_pending(mca_bml_base_btl_t *bml_btl)
 {
     int rc, i, s = opal_list_get_size(&mca_pml_bfo.send_pending);
@@ -505,12 +482,6 @@ int mca_pml_bfo_send_request_start_buffered(
     OPAL_THREAD_UNLOCK(&ompi_request_lock);
 
     /* send */
-
-	// TODO: Debug Output
-	BTL_OUTPUT(("mca_pml_bfo_send_request_start_buffered"));
-	print_debug_data(bml_btl, des);
-	// TODO: Debug Output
-
     rc = mca_bml_base_send(bml_btl, des, MCA_PML_BFO_HDR_TYPE_RNDV);
     if( OPAL_LIKELY( rc >= 0 ) ) {
         if( OPAL_LIKELY( 1 == rc ) ) {
@@ -557,11 +528,6 @@ int mca_pml_bfo_send_request_start_copy( mca_pml_bfo_send_request_t* sendreq,
         
         bfo_hdr_hton(&match, MCA_PML_BFO_HDR_TYPE_MATCH,
                      sendreq->req_send.req_base.req_proc);
-
-		// TODO: Debug Output
-		BTL_OUTPUT(("mca_pml_bfo_send_request_start_copy - 1"));
-		print_debug_data(bml_btl, des);
-		// TODO: Debug Output
 
         /* try to send immediately */
         rc = mca_bml_base_sendi( bml_btl, &sendreq->req_send.req_base.req_convertor,
@@ -647,11 +613,6 @@ int mca_pml_bfo_send_request_start_copy( mca_pml_bfo_send_request_t* sendreq,
     des->des_cbdata = sendreq;
     des->des_cbfunc = mca_pml_bfo_match_completion_free;
 
-	// TODO: Debug Output
-	BTL_OUTPUT(("mca_pml_bfo_send_request_start_copy - 2"));
-	print_debug_data(bml_btl, des);
-	// TODO: Debug Output
-
     /* send */
     rc = mca_bml_base_send_status(bml_btl, des, MCA_PML_BFO_HDR_TYPE_MATCH);
     if( OPAL_LIKELY( rc >= OMPI_SUCCESS ) ) {
@@ -713,12 +674,6 @@ int mca_pml_bfo_send_request_start_prepare( mca_pml_bfo_send_request_t* sendreq,
     /* short message */
     des->des_cbfunc = mca_pml_bfo_match_completion_free;
     des->des_cbdata = sendreq;
-
-	// TODO: Debug Output
-	BTL_OUTPUT(("mca_pml_bfo_send_request_start_prepare"));
-	print_debug_data(bml_btl, des);
-	// TODO: Debug Output
-
 
     /* send */
     rc = mca_bml_base_send(bml_btl, des, MCA_PML_BFO_HDR_TYPE_MATCH); 
@@ -885,11 +840,6 @@ int mca_pml_bfo_send_request_start_rdma( mca_pml_bfo_send_request_t* sendreq,
 
     des->des_cbdata = sendreq;
 
-	// TODO: Debug Output
-	BTL_OUTPUT(("mca_pml_bfo_send_request_start_rdma"));
-	print_debug_data(bml_btl, des);
-	// TODO: Debug Output
-
 
     /* send */
     rc = mca_bml_base_send(bml_btl, des, hdr->hdr_common.hdr_type);
@@ -988,11 +938,6 @@ int mca_pml_bfo_send_request_start_rndv( mca_pml_bfo_send_request_t* sendreq,
 
     /* wait for ack and completion */
     sendreq->req_state = 2;
-
-	// TODO: Debug Output
-	BTL_OUTPUT(("mca_pml_bfo_send_request_start_rndv"));
-	print_debug_data(bml_btl, des);
-	// TODO: Debug Output
 
 
     /* send */
@@ -1217,12 +1162,6 @@ cannot_pack:
                  &(sendreq->req_send.req_base), size, PERUSE_SEND);
 #endif  /* OMPI_WANT_PERUSE */
 
-		// TODO: Debug Output
-		BTL_OUTPUT(("mca_pml_bfo_send_request_schedule_once"));
-		print_debug_data(bml_btl, des);
-		// TODO: Debug Output
-
-
         /* initiate send - note that this may complete before the call returns */
         rc = mca_bml_base_send(bml_btl, des, MCA_PML_BFO_HDR_TYPE_FRAG);
         if( OPAL_LIKELY(rc >= 0) ) {
@@ -1362,10 +1301,6 @@ int mca_pml_bfo_send_request_put_frag( mca_pml_bfo_rdma_frag_t* frag )
     PERUSE_TRACE_COMM_OMPI_EVENT( PERUSE_COMM_REQ_XFER_CONTINUE,
                                   &(((mca_pml_bfo_send_request_t*)frag->rdma_req)->req_send.req_base), save_size, PERUSE_SEND );
 
-	// TODO: Debug Output
-	BTL_OUTPUT(("mca_pml_bfo_send_request_put_frag"));
-	print_debug_data(bml_btl, des);
-	// TODO: Debug Output
 
     rc = mca_bml_base_put(bml_btl, des);
     if( OPAL_UNLIKELY(OMPI_SUCCESS != rc) ) {
